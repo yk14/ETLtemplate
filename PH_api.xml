@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<Actions>
+    <Action ActionName="发送数据" ActionNo="1"><!--ActionNo用于唯一标识Action，方便后续单独调用指定Action-->
+        <DataSource>
+            <DataSourceType>MSSQL</DataSourceType>
+            <TableName>[DataInterface].[dbo].[RefundCashflowOrder]</TableName>
+            <DataSourceName>DataInterface</DataSourceName>
+            <DataSourceDescription>退款流水表</DataSourceDescription>
+            <UserName>sa</UserName>
+            <UserPassword>UGFzc3dvcmQwMQ==</UserPassword>
+            <Charset>UTF-8</Charset>
+            <DataSourceUrl>172.16.6.131:1433</DataSourceUrl>
+            <DataGetSQL>
+			select RefundId,RefundReason,RefundFlag,TrustCode,TrustName,Principal,Interest,RefundDate,RefundBalance,ReceiverAccountNo,PayerAccountNo,LEGAL_PERSON_NO,SystemSource,CreatedBy,OrderStatus
+			from [DataInterface].[dbo].[RefundCashflowOrder] where OrderStatus = 0 </DataGetSQL> <!-- 根据TaskId 获取据， taskId的具体值在python中拼接。-->
+            <TaskTableName>[DataInterface].[dbo].[DataInterfaceTask]</TaskTableName><!--接口数据库 task表-->
+			<TaskSql>select TaskId from [DataInterface].[dbo].[DataInterfaceTask] 
+				where Direction = 1 and ( TaskState = 0 or TaskState = 3 or TaskState = 1) and InterfaceType = 'RefundCashflowOrder' and TaskChannel = 'OPEN_API'</TaskSql><!--获取task表中待处理的task-->
+			<keyColumn>RefundId</keyColumn><!-- 数据唯一标识 -->
+            <SendToken>False</SendToken><!-- True 或  False -->
+            <GetTokenUrl>http://esg-oauth-stg.paic.com.cn/oauth/oauth2/access_token?client_id=P_PH_ABS_SERVICE&amp;grant_type=client_credentials&amp;client_secret= hgr563Ai</GetTokenUrl>
+        </DataSource>
+        <Destination type="SendToInterface"><!--接口调用标志：SendToInterface ： 发送数据。接受数据暂未指定-->
+            <Type>GET</Type>
+            <Url>http://localhost:8081/api/TesT</Url>
+            <Extra_params><!--用于数据发送接口发送数据以外的参数-->
+                <Key1>Value1</Key1>
+                <Key2>Value2</Key2>
+            </Extra_params>
+        </Destination>
+        <Callback location="Customize">
+            <DataSQL id="0"><!--接收返回状态，成功执行的sql-->
+                <SQL>update dbo.RefundCashflowOrder set OrderStatus = 2 where 1 = 1 </SQL><!--根据数据唯一标识修改，where条件在python拼接。-->
+                <Params><!--用于扩展场景，现在未处理-->
+                    <Param rsname="RefundId" dbname="1"></Param>
+                    <Param rsname="rs2" dbname="Param21"></Param>
+                </Params>
+            </DataSQL>
+            <DataSQL id="1"><!--接收返回状态，失败执行的sql-->
+                <SQL>update dbo.RefundCashflowOrder set OrderStatus = 3 where 1 = 1 </SQL>
+                <Params>
+                    <Param rsname="rs1" dbname="1"></Param>
+                    <Param rsname="rs2" dbname="Param2"></Param>
+                </Params>
+            </DataSQL>
+        </Callback>
+    </Action>
+	
+	<Action ActionName="发送数据" ActionNo="2"><!--ActionNo用于唯一标识Action，方便后续单独调用指定Action-->
+        <DataSource>
+            <DataSourceType>MSSQL</DataSourceType>
+            <TableName>[DataInterface].[dbo].[ABSTrustPaymentOrder]</TableName>
+            <DataSourceName>DataInterface</DataSourceName>
+            <DataSourceDescription>ABS兑付表</DataSourceDescription>
+            <UserName>sa</UserName>
+            <UserPassword>UGFzc3dvcmQwMQ==</UserPassword>
+            <Charset>UTF-8</Charset>
+            <DataSourceUrl>172.16.6.131:1433</DataSourceUrl>
+            <DataGetSQL>
+			select paymentId, trustCode,paymentAmount,payDate,receiverAccount,isRegulated,paymentAccount,sourceSystem,productType,paymentReason,firstPay,payperiods,corpus,interest,other
+			from DataInterface.dbo.ABSTrustPaymentOrder where 1 = 1 </DataGetSQL> <!-- 根据TaskId获取据， taskId的具体值在python中拼接。-->
+            <TaskTableName>[DataInterface].[dbo].[DataInterfaceTask]</TaskTableName><!--接口数据库 task表-->
+			<TaskSql>select TaskId from [DataInterface].[dbo].[DataInterfaceTask] 
+				where Direction = 1 and ( TaskState = 0 or TaskState = 3 or TaskState = 1) and InterfaceType = 'ABSTrustPaymentOrder' and TaskChannel = 'OPEN_API'</TaskSql><!--获取task表中待处理的task-->
+			<keyColumn>paymentId</keyColumn><!-- 数据唯一标识 -->
+            <SendToken>False</SendToken><!-- True 或  False -->
+            <GetTokenUrl>http://esg-oauth-stg.paic.com.cn/oauth/oauth2/access_token?client_id=P_PH_ABS_SERVICE&amp;grant_type=client_credentials&amp;client_secret= hgr563Ai</GetTokenUrl>
+        </DataSource>
+        <Destination type="SendToInterface"><!--接口调用的作用：SendToInterface ： 发送数据。接受数据暂未指定-->
+            <Type>GET</Type>
+            <Url>http://localhost:8081/api/TesT</Url>
+            <Extra_params><!--用于数据发送接口发送数据以外的参数-->
+                <Key1>Value1</Key1>
+                <Key2>Value2</Key2>
+            </Extra_params>
+        </Destination>
+        <Callback location="Customize">
+            <DataSQL id="0"><!--接收返回状态，成功执行的sql-->
+                <SQL>update dbo.ABSTrustPaymentOrder set PaymentStatus = N'已执行' where 1 = 1 </SQL><!--根据数据唯一标识修改，where条件在python拼接。这里加where 1 = 1 方便拼接-->
+                <Params><!--用于扩展场景，现在未处理-->
+                    <Param rsname="rs1" dbname="1"></Param>
+                    <Param rsname="rs2" dbname="Param21"></Param>
+                </Params>
+            </DataSQL>
+            <DataSQL id="1"><!--接收返回状态，失败执行的sql-->
+                <SQL>update dbo.ABSTrustPaymentOrder set PaymentStatus = N'失败' where 1 = 1 </SQL>
+                <Params>
+                    <Param rsname="rs1" dbname="1"></Param>
+                    <Param rsname="rs2" dbname="Param2"></Param>
+                </Params>
+            </DataSQL>
+        </Callback>
+    </Action>
+</Actions>
